@@ -1,5 +1,5 @@
 {
-    "Group": "HytaleModding",
+    "Group": "Abo47",
     "Name": "oresandstuff",
     "Version": "0.1.0-alpha",
     "Description": "A mod that adds ores and other stuff",
@@ -17,7 +17,7 @@
     "OptionalDependencies": {
         
     },
-    "ServerVersion": ">=0.5.3 <0.6.1",
+    "ServerVersion": ">=0.5.3",
     "Main": "com.abo47.oresandstuff.OresAndStuffPlugin",
     "UpdateChecker": {
         "CurseForge": ""

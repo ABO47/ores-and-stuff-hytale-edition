@@ -41,10 +41,16 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation("com.google.code.gson:gson:2.10.1")
+}
+
 tasks.named<Jar>("jar") {
     archiveBaseName.set(project.property("mod_name").toString())
     archiveVersion.set(project.property("version").toString())
 }
+
+
 
 // Uncomment if you are using IntelliJ.
 // idea {
