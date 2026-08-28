@@ -1,4 +1,4 @@
-package dev.hytalemodding.events;
+package com.abo47.oresandstuff.events;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -11,7 +11,6 @@ public class OresEvent {
 
     public static void onPlayerReady(PlayerReadyEvent event) {
         Ref<EntityStore> ref = event.getPlayerRef();
-    
         if (ref.isValid()) {
             Store<EntityStore> store = ref.getStore();
             PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
@@ -20,5 +19,4 @@ public class OresEvent {
             }
         }
     }
-
 }

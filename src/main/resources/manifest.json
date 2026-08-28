@@ -1,13 +1,11 @@
 {
     "Group": "HytaleModding",
-    "Name": "ores and stuff",
+    "Name": "oresandstuff",
     "Version": "0.1.0-alpha",
-    "Description": "A mod that adds new ores and stuff to Hytale",
+    "Description": "A mod that adds ores and other stuff",
     "Authors": [
         {
-            "Name": "abo47",
-            "Email": "",
-            "Url": ""
+            "Name": "abo47"
         }
     ],
     "Website": "",
@@ -19,8 +17,8 @@
     "OptionalDependencies": {
         
     },
-    "ServerVersion": ">=0.5.3 <0.6.0",
-    "Main": "dev.hytalemodding.OresAndStuffPlugin",
+    "ServerVersion": ">=0.5.3 <0.6.1",
+    "Main": "com.abo47.oresandstuff.OresAndStuffPlugin",
     "UpdateChecker": {
         "CurseForge": ""
     }

@@ -1,10 +1,9 @@
-package dev.hytalemodding.commands;
+package com.abo47.oresandstuff.commands;
 
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.Message;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 
@@ -16,9 +15,8 @@ public class OresCommand extends AbstractCommand {
 
     @Nullable
     @Override
-    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+    protected CompletableFuture<Void> execute(CommandContext context) {
         context.sendMessage(Message.raw("Hello from OresCommand!"));
         return CompletableFuture.completedFuture(null);
     }
-
 }

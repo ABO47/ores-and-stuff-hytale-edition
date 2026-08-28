@@ -1,14 +1,13 @@
-package dev.hytalemodding;
+package com.abo47.oresandstuff;
 
-import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.Config;
-import dev.hytalemodding.commands.OresCommand;
-import dev.hytalemodding.config.OresConfig;
-import dev.hytalemodding.events.OresEvent;
+import com.abo47.oresandstuff.commands.OresCommand;
+import com.abo47.oresandstuff.config.OresConfig;
 
 import javax.annotation.Nonnull;
+import java.util.logging.Level;
 
 public class OresAndStuffPlugin extends JavaPlugin {
 
@@ -22,10 +21,8 @@ public class OresAndStuffPlugin extends JavaPlugin {
     @Override
     protected void setup() {
         config.save();
-        this.getCommandRegistry().registerCommand(new OresCommand("ores", "An ores command"));
-        if (getConfig().get().isEnabledWelcomeMessage()) {
-            this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, OresEvent::onPlayerReady);
-        }
+        getLogger().at(Level.INFO).log("Ores and Stuff loaded with " + config.get().getNodes().size() + " node definition(s)");
+        this.getCommandRegistry().registerCommand(new OresCommand("ores", "Ores and stuff command"));
     }
 
     public static Config<OresConfig> getConfig() {
