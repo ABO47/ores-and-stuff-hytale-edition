@@ -15,6 +15,12 @@ import com.hypixel.hytale.server.core.event.events.ecs.DamageBlockEvent;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.asset.type.blocksound.config.BlockSoundSet;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
+import com.hypixel.hytale.protocol.BlockSoundEvent;
+import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -90,6 +96,19 @@ public final class ManualExtractionHandler {
             return;
         }
 
+        OreNodeConfig cfg = resolveConfig(data.nodeId);
+        if (cfg == null) {
+            event.setCancelled(true);
+            return;
+        }
+
+        var vis = cfg.resolveVisual(data.quality, world.getName());
+        String soundBlock = vis != null ? vis.visualBlock : cfg.getOutputItem();
+        if (soundBlock == null || soundBlock.isBlank() || !isValidBlock(soundBlock)) {
+            soundBlock = (vis != null && vis.nodeBlock != null && isValidBlock(vis.nodeBlock)) ? vis.nodeBlock : "Rock_Stone";
+        }
+        playBreakSound(store, pos, soundBlock);
+
         var playerComp = store.getComponent(ref, PlayerRef.getComponentType());
         UUID uuid = playerComp != null ? playerComp.getUuid() : null;
         long now = System.currentTimeMillis();
@@ -101,12 +120,6 @@ public final class ManualExtractionHandler {
                 return;
             }
             LAST_HIT.put(uuid, now);
-        }
-
-        OreNodeConfig cfg = resolveConfig(data.nodeId);
-        if (cfg == null) {
-            event.setCancelled(true);
-            return;
         }
 
         int rolls = Math.max(1, (int) Math.round(spec.extract_amount * Math.max(0.01, data.quality / 100.0)));
@@ -145,6 +158,30 @@ public final class ManualExtractionHandler {
 
     private static PickaxeEntry findSpec(String itemId) {
         return PickaxeLoader.getAll().get(itemId);
+    }
+
+    private static boolean isValidBlock(String id) {
+        if (id == null || id.isBlank()) return false;
+        try {
+            int idx = BlockType.getAssetMap().getIndex(id);
+            if (idx < 0) return false;
+            BlockType bt = BlockType.getAssetMap().getAsset(idx);
+            return bt != null && bt != BlockType.EMPTY && bt != BlockType.UNKNOWN;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private static void playBreakSound(Store<EntityStore> store, Vector3i pos, String blockId) {
+        try {
+            BlockType bt = BlockType.getAssetMap().getAsset(blockId);
+            if (bt == null) return;
+            BlockSoundSet bss = BlockSoundSet.getAssetMap().getAsset(bt.getBlockSoundSetIndex());
+            if (bss == null) return;
+            int breakIndex = bss.getSoundEventIndices().getInt(BlockSoundEvent.Break);
+            if (breakIndex == SoundEvent.EMPTY_ID) return;
+            SoundUtil.playSoundEvent3d(breakIndex, SoundCategory.SFX, pos.x + 0.5, pos.y + 0.5, pos.z + 0.5, store);
+        } catch (Exception ignored) {}
     }
 
     private static OreNodeConfig resolveConfig(String nodeId) {

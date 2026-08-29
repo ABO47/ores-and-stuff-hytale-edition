@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import com.abo47.oresandstuff.OresAndStuffPlugin;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -126,8 +127,8 @@ public final class NodeConfigLoader {
             JsonObject v = new JsonObject();
             v.addProperty("min", t.min);
             v.addProperty("max", t.max);
-            v.addProperty("node_block", t.nodeBlock);
-            v.addProperty("visual_block", t.visualBlock);
+            v.addProperty("node_block", safeBlock(t.nodeBlock));
+            v.addProperty("visual_block", fixVisualBlock(t.visualBlock, t.nodeBlock));
             v.add("dimensions", new JsonArray());
             visuals.add(v);
         }
@@ -396,6 +397,43 @@ public final class NodeConfigLoader {
         ores.add(prisma);
 
         return ores;
+    }
+
+    private static boolean assetsReady() {
+        try {
+            return BlockType.getAssetMap().getIndex("Rock_Stone") >= 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isValidBlock(String id) {
+        if (id == null || id.isBlank()) return false;
+        if (!assetsReady()) return true;
+        try {
+            int idx = BlockType.getAssetMap().getIndex(id);
+            if (idx < 0) return false;
+            BlockType bt = BlockType.getAssetMap().getAsset(idx);
+            return bt != null && bt != BlockType.EMPTY && bt != BlockType.UNKNOWN;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private static String safeBlock(String id) {
+        return isValidBlock(id) ? id : "Rock_Stone";
+    }
+
+    private static String fixVisualBlock(String visual, String nodeBlock) {
+        if (isValidBlock(visual)) return visual;
+        if (visual != null && visual.startsWith("Ore_")) {
+            String[] parts = visual.split("_");
+            if (parts.length >= 3) {
+                String stone = "Ore_" + parts[1] + "_Stone";
+                if (isValidBlock(stone)) return stone;
+            }
+        }
+        return isValidBlock(nodeBlock) ? nodeBlock : "Rock_Stone";
     }
 
     private static final class OreSpec {

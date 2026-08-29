@@ -110,6 +110,8 @@ public final class NodeSpawner {
                 String nodeBlock = vis != null ? vis.nodeBlock : visualBlock;
                 if (nodeBlock == null || nodeBlock.isBlank()) nodeBlock = visualBlock;
                 nodeBlock = resolveBlock(nodeBlock);
+                String safeVisual = fixVisualBlock(visualBlock, nodeBlock);
+                String safeNode = isValidBlock(nodeBlock) ? nodeBlock : (isValidBlock(visualBlock) ? visualBlock : "Rock_Stone");
 
                 boolean placedCluster = false;
                 for (int attempt = 0; attempt < attempts && !placedCluster; attempt++) {
@@ -129,7 +131,7 @@ public final class NodeSpawner {
                         if (!used.add(key)) continue;
                         int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkX, x);
                         int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkZ, z);
-                        String blockId = rng.nextDouble() < VISUAL_RATIO ? visualBlock : nodeBlock;
+                        String blockId = rng.nextDouble() < VISUAL_RATIO ? safeVisual : safeNode;
                         placements.add(new Placement(worldX, y, worldZ, nodeId, quality, surface, blockId));
                     }
                     placedCluster = true;
@@ -301,6 +303,39 @@ public final class NodeSpawner {
     private static boolean isTreeBlock(String key) {
         return key.startsWith("Tree_") || key.startsWith("Bush_")
                 || key.contains("Leaf") || key.contains("Leaves") || key.contains("Log");
+    }
+
+    private static boolean assetsReady() {
+        try {
+            return BlockType.getAssetMap().getIndex("Rock_Stone") >= 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isValidBlock(String id) {
+        if (id == null || id.isBlank()) return false;
+        if (!assetsReady()) return true;
+        try {
+            int idx = BlockType.getAssetMap().getIndex(id);
+            if (idx < 0) return false;
+            BlockType bt = BlockType.getAssetMap().getAsset(idx);
+            return bt != null && bt != BlockType.EMPTY && bt != BlockType.UNKNOWN;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private static String fixVisualBlock(String visual, String nodeBlock) {
+        if (isValidBlock(visual)) return visual;
+        if (visual != null && visual.startsWith("Ore_")) {
+            String[] parts = visual.split("_");
+            if (parts.length >= 3) {
+                String stone = "Ore_" + parts[1] + "_Stone";
+                if (isValidBlock(stone)) return stone;
+            }
+        }
+        return isValidBlock(nodeBlock) ? nodeBlock : "Rock_Stone";
     }
 
     private static final class Placement {
