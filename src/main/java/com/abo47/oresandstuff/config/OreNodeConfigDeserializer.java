@@ -32,8 +32,7 @@ public class OreNodeConfigDeserializer implements JsonDeserializer<OreNodeConfig
         cfg.qualityMax = getDouble(o, "quality_max", cfg.qualityMax);
         cfg.qualityVisuals = getQualityVisuals(o, cfg.qualityVisuals);
         cfg.dimensions = getStringList(o, "dimensions", cfg.dimensions);
-        cfg.biomes = getBiomesMap(o, cfg.biomes);
-        cfg.biomeOverrides = getBiomeOverrides(o, cfg.biomeOverrides);
+        cfg.dimensionBiomes = getDimensionBiomes(o, cfg.dimensionBiomes);
         cfg.minNodesPerChunk = getInt(o, "min_nodes_per_chunk", cfg.minNodesPerChunk);
         cfg.maxNodesPerChunk = getInt(o, "max_nodes_per_chunk", cfg.maxNodesPerChunk);
         cfg.maxMinersPerNode = getInt(o, "max_miners_per_node", cfg.maxMinersPerNode);
@@ -105,11 +104,42 @@ public class OreNodeConfigDeserializer implements JsonDeserializer<OreNodeConfig
         return def;
     }
 
-    private Map<String, Integer> getBiomesMap(JsonObject o, Map<String, Integer> def) {
-        if (!o.has("biomes") || !o.get("biomes").isJsonObject()) return def;
-        Map<String, Integer> out = new HashMap<>();
-        for (Map.Entry<String, JsonElement> e : o.getAsJsonObject("biomes").entrySet()) {
-            try { out.put(e.getKey(), e.getValue().getAsInt()); } catch (Exception ignored) {}
+    private Map<String, Map<String, BiomeSpawnConfig>> getDimensionBiomes(JsonObject o, Map<String, Map<String, BiomeSpawnConfig>> def) {
+        if (!o.has("dimension_biomes") || !o.get("dimension_biomes").isJsonObject()) return def;
+        Map<String, Map<String, BiomeSpawnConfig>> out = new HashMap<>();
+        JsonObject dims = o.getAsJsonObject("dimension_biomes");
+        for (Map.Entry<String, JsonElement> dimEntry : dims.entrySet()) {
+            if (!dimEntry.getValue().isJsonObject()) continue;
+            JsonObject biomesObj = dimEntry.getValue().getAsJsonObject();
+            Map<String, BiomeSpawnConfig> bmap = new HashMap<>();
+            for (Map.Entry<String, JsonElement> biomeEntry : biomesObj.entrySet()) {
+                if (!biomeEntry.getValue().isJsonObject()) continue;
+                JsonObject b = biomeEntry.getValue().getAsJsonObject();
+                BiomeSpawnConfig bc = new BiomeSpawnConfig();
+                bc.weight = getInt(b, "weight", bc.weight);
+                bc.minY = getInt(b, "min_y", bc.minY);
+                bc.maxY = getInt(b, "max_y", bc.maxY);
+                bc.surfaceSpawn = getBoolean(b, "surface_spawn", bc.surfaceSpawn);
+                bc.qualityBands = getQualityBands(b, "quality_bands");
+                bmap.put(biomeEntry.getKey(), bc);
+            }
+            out.put(dimEntry.getKey(), bmap);
+        }
+        return out;
+    }
+
+    private List<QualityBand> getQualityBands(JsonObject o, String key) {
+        List<QualityBand> out = new ArrayList<>();
+        if (!o.has(key) || !o.get(key).isJsonArray()) return out;
+        for (JsonElement el : o.getAsJsonArray(key)) {
+            if (!el.isJsonObject()) continue;
+            JsonObject q = el.getAsJsonObject();
+            QualityBand band = new QualityBand();
+            band.minY = getInt(q, "min_y", band.minY);
+            band.maxY = getInt(q, "max_y", band.maxY);
+            band.qualityMin = getDouble(q, "quality_min", band.qualityMin);
+            band.qualityMax = getDouble(q, "quality_max", band.qualityMax);
+            out.add(band);
         }
         return out;
     }
@@ -127,29 +157,6 @@ public class OreNodeConfigDeserializer implements JsonDeserializer<OreNodeConfig
             qv.visualBlock = getString(q, "visual_block", "Ore_Iron_Stone");
             qv.dimensions = getStringList(q, "dimensions", new ArrayList<>());
             out.add(qv);
-        }
-        return out;
-    }
-
-    private Map<String, BiomeOverride> getBiomeOverrides(JsonObject o, Map<String, BiomeOverride> def) {
-        if (!o.has("biome_overrides") || !o.get("biome_overrides").isJsonObject()) return def;
-        Map<String, BiomeOverride> out = new HashMap<>();
-        for (Map.Entry<String, JsonElement> e : o.getAsJsonObject("biome_overrides").entrySet()) {
-            if (!e.getValue().isJsonObject()) continue;
-            JsonObject q = e.getValue().getAsJsonObject();
-            BiomeOverride bo = new BiomeOverride();
-            if (q.has("quality_min")) bo.qualityMin = q.get("quality_min").getAsDouble();
-            if (q.has("quality_max")) bo.qualityMax = q.get("quality_max").getAsDouble();
-            if (q.has("min_y")) bo.minY = q.get("min_y").getAsInt();
-            if (q.has("max_y")) bo.maxY = q.get("max_y").getAsInt();
-            if (q.has("surface_spawn")) try { bo.surfaceSpawn = q.get("surface_spawn").getAsBoolean(); } catch (Exception ignored) { bo.surfaceSpawn = Boolean.parseBoolean(q.get("surface_spawn").getAsString()); }
-            if (q.has("cluster_radius")) bo.clusterRadius = q.get("cluster_radius").getAsInt();
-            if (q.has("scatter_count")) bo.scatterCount = q.get("scatter_count").getAsInt();
-            if (q.has("min_nodes_per_chunk")) bo.minNodesPerChunk = q.get("min_nodes_per_chunk").getAsInt();
-            if (q.has("max_nodes_per_chunk")) bo.maxNodesPerChunk = q.get("max_nodes_per_chunk").getAsInt();
-            if (q.has("min_spacing_blocks")) bo.minSpacingBlocks = q.get("min_spacing_blocks").getAsInt();
-            if (q.has("placement_attempts")) bo.placementAttempts = q.get("placement_attempts").getAsInt();
-            out.put(e.getKey(), bo);
         }
         return out;
     }

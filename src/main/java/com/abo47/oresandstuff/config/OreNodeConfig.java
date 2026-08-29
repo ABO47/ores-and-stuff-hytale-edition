@@ -48,11 +48,8 @@ public class OreNodeConfig {
     @SerializedName("dimensions")
     public List<String> dimensions = new ArrayList<>();
 
-    @SerializedName("biomes")
-    public Map<String, Integer> biomes = new HashMap<>();
-
-    @SerializedName("biome_overrides")
-    public Map<String, BiomeOverride> biomeOverrides = new HashMap<>();
+    @SerializedName("dimension_biomes")
+    public Map<String, Map<String, BiomeSpawnConfig>> dimensionBiomes = new HashMap<>();
 
     @SerializedName("min_nodes_per_chunk")
     public int minNodesPerChunk = 0;
@@ -70,7 +67,7 @@ public class OreNodeConfig {
     public int placementAttempts = 2;
 
     @SerializedName("cluster_radius")
-    public int clusterRadius = 2;
+    public int clusterRadius = 5;
 
     @SerializedName("scatter_count")
     public int scatterCount = 4;
@@ -133,10 +130,6 @@ public class OreNodeConfig {
         return qualityVisuals;
     }
 
-    public Map<String, BiomeOverride> getBiomeOverrides() {
-        return biomeOverrides;
-    }
-
     public List<String> getDimensionList() {
         return new ArrayList<>(dimensions);
     }
@@ -179,12 +172,6 @@ public class OreNodeConfig {
 
     public boolean isSurfacePlacement() {
         return surfaceSpawn;
-    }
-
-    public Map<String, Double> getBiomeMap() {
-        Map<String, Double> out = new HashMap<>();
-        for (Map.Entry<String, Integer> e : biomes.entrySet()) out.put(e.getKey(), e.getValue().doubleValue());
-        return out;
     }
 
     public QualityVisual resolveVisual(double quality, String dimension) {

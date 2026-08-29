@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.abo47.oresandstuff.commands.OresCommand;
 import com.abo47.oresandstuff.config.NodeConfigLoader;
 import com.abo47.oresandstuff.config.PickaxeLoader;
+import com.abo47.oresandstuff.config.SettingsLoader;
 import com.abo47.oresandstuff.node.NodeSpawner;
 import com.abo47.oresandstuff.node.OreNodeComponent;
 
@@ -31,6 +32,7 @@ public class OresAndStuffPlugin extends JavaPlugin {
         try {
             var folderNodes = NodeConfigLoader.loadAll();
             PickaxeLoader.loadAll();
+            SettingsLoader.load();
             totalNodes = folderNodes.size();
             getLogger().at(Level.INFO).log("Loaded " + folderNodes.size() + " orenode(s) and " + PickaxeLoader.getAll().size() + " pickaxe type(s)");
         } catch (Exception e) {

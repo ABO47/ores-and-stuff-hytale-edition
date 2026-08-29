@@ -2,8 +2,6 @@ package com.abo47.oresandstuff.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import com.abo47.oresandstuff.OresAndStuffPlugin;
@@ -52,19 +50,14 @@ public final class PickaxeLoader {
             try {
                 String json = Files.readString(file, StandardCharsets.UTF_8);
                 JsonObject root = GSON.fromJson(json, JsonObject.class);
-                if (root == null || !root.has("tools") || !root.get("tools").isJsonArray()) continue;
-                for (JsonElement el : root.getAsJsonArray("tools")) {
-                    if (!el.isJsonObject()) continue;
-                    JsonObject o = el.getAsJsonObject();
-                    if (!o.has("item")) continue;
-                    String item = o.get("item").getAsString();
-                    PickaxeEntry e2 = new PickaxeEntry();
-                    e2.item = item;
-                    e2.extract_amount = o.has("extract_amount") ? o.get("extract_amount").getAsInt() : 1;
-                    e2.cooldown_ticks = o.has("cooldown_ticks") ? o.get("cooldown_ticks").getAsInt() : 40;
-                    e2.durability_cost = o.has("durability_cost") ? o.get("durability_cost").getAsInt() : 1;
-                    ENTRIES.put(item, e2);
-                }
+                if (root == null || !root.has("item")) continue;
+                String item = root.get("item").getAsString();
+                PickaxeEntry e2 = new PickaxeEntry();
+                e2.item = item;
+                e2.extract_amount = root.has("extract_amount") ? root.get("extract_amount").getAsInt() : 1;
+                e2.cooldown_ticks = root.has("cooldown_ticks") ? root.get("cooldown_ticks").getAsInt() : 40;
+                e2.durability_cost = root.has("durability_cost") ? root.get("durability_cost").getAsInt() : 1;
+                ENTRIES.put(item, e2);
             } catch (Exception e) {
                 OresAndStuffPlugin.get().getLogger().at(Level.WARNING).log("Failed to parse pickaxe config " + file + ": " + e.getMessage());
             }
@@ -77,49 +70,34 @@ public final class PickaxeLoader {
     }
 
     private static Path getPerWorldFolder() {
-        try {
-            var plugin = OresAndStuffPlugin.get();
-            if (plugin != null) {
-                Path dataDir = plugin.getDataDirectory();
-                if (dataDir != null) {
-                    return dataDir.getParent().getParent().resolve("config").resolve("oresandstuff").resolve("pickaxes");
-                }
-            }
-        } catch (Exception ignored) {}
-        return java.nio.file.Paths.get("config", "oresandstuff", "pickaxes");
+        return ConfigPaths.configRoot().resolve("pickaxes");
     }
 
     private static void generateDefaults(Path folder) {
-        try (Stream<Path> s = Files.list(folder)) {
-            if (s.findAny().isPresent()) return;
-        } catch (IOException ignored) {}
-        Path file = folder.resolve("vanilla.json");
-        if (Files.isRegularFile(file)) return;
-        JsonObject root = new JsonObject();
-        JsonArray tools = new JsonArray();
-        tools.add(tool("Tool_Pickaxe_Wood", 1, 60, 2));
-        tools.add(tool("Tool_Pickaxe_Copper", 1, 50, 2));
-        tools.add(tool("Tool_Pickaxe_Iron", 1, 40, 1));
-        tools.add(tool("Tool_Pickaxe_Thorium", 1, 30, 2));
-        tools.add(tool("Tool_Pickaxe_Cobalt", 1, 25, 1));
-        tools.add(tool("Tool_Pickaxe_Adamantite", 1, 20, 1));
-        tools.add(tool("Tool_Pickaxe_Mithril", 1, 15, 1));
-        tools.add(tool("Tool_Pickaxe_Onyxium", 1, 10, 1));
-        root.add("tools", tools);
-        try {
-            Files.writeString(file, GSON.toJson(root), StandardCharsets.UTF_8);
-            OresAndStuffPlugin.get().getLogger().at(Level.INFO).log("Generated default pickaxe config " + file);
-        } catch (IOException e) {
-            OresAndStuffPlugin.get().getLogger().at(Level.WARNING).log("Failed to write default pickaxe config: " + e.getMessage());
+        String[][] tools = {
+            {"Tool_Pickaxe_Wood", "1", "60", "2"},
+            {"Tool_Pickaxe_Copper", "1", "50", "2"},
+            {"Tool_Pickaxe_Iron", "1", "40", "1"},
+            {"Tool_Pickaxe_Thorium", "1", "30", "2"},
+            {"Tool_Pickaxe_Cobalt", "1", "25", "1"},
+            {"Tool_Pickaxe_Adamantite", "1", "20", "1"},
+            {"Tool_Pickaxe_Mithril", "1", "15", "1"},
+            {"Tool_Pickaxe_Onyxium", "1", "10", "1"},
+        };
+        for (String[] t : tools) {
+            JsonObject o = new JsonObject();
+            o.addProperty("item", t[0]);
+            o.addProperty("extract_amount", Integer.parseInt(t[1]));
+            o.addProperty("cooldown_ticks", Integer.parseInt(t[2]));
+            o.addProperty("durability_cost", Integer.parseInt(t[3]));
+            Path file = folder.resolve(t[0] + ".json");
+            try {
+                Files.writeString(file, GSON.toJson(o), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                OresAndStuffPlugin.get().getLogger().at(Level.WARNING)
+                        .log("Failed to write default pickaxe config " + file + ": " + e.getMessage());
+            }
         }
-    }
-
-    private static JsonObject tool(String item, int extract, int cooldown, int durability) {
-        JsonObject o = new JsonObject();
-        o.addProperty("item", item);
-        o.addProperty("extract_amount", extract);
-        o.addProperty("cooldown_ticks", cooldown);
-        o.addProperty("durability_cost", durability);
-        return o;
+        OresAndStuffPlugin.get().getLogger().at(Level.INFO).log("Generated " + tools.length + " default pickaxe config(s)");
     }
 }

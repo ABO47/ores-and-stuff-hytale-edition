@@ -6,7 +6,10 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
+import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
 import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.DamageBlockEvent;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
@@ -17,15 +20,20 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import com.abo47.oresandstuff.OresAndStuffPlugin;
+import com.abo47.oresandstuff.config.GlobalSettings;
+import com.abo47.oresandstuff.config.MiningMode;
 import com.abo47.oresandstuff.config.OreNodeConfig;
 import com.abo47.oresandstuff.config.PickaxeEntry;
 import com.abo47.oresandstuff.config.PickaxeLoader;
 import com.abo47.oresandstuff.node.OreNodeComponent;
 
+import org.joml.Vector3d;
 import org.joml.Vector3i;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -107,14 +115,14 @@ public final class ManualExtractionHandler {
             for (Map.Entry<String, Integer> e : cfg.getDrops().entrySet()) {
                 int chance = e.getValue();
                 if (chance >= 100 || RNG.nextInt(100) < chance) {
-                    giveItem(store, ref, e.getKey(), 1);
+                    grantItem(store, ref, pos, e.getKey(), 1);
                     gave = true;
                 }
             }
         }
         if (!gave) {
             String fallback = cfg.getOutputItem();
-            if (fallback != null && !fallback.isBlank()) giveItem(store, ref, fallback, 1);
+            if (fallback != null && !fallback.isBlank()) grantItem(store, ref, pos, fallback, 1);
         }
         event.setCancelled(true);
     }
@@ -143,13 +151,38 @@ public final class ManualExtractionHandler {
         return com.abo47.oresandstuff.config.NodeConfigLoader.loadAll().get(nodeId);
     }
 
-    private static void giveItem(Store<EntityStore> store, Ref<EntityStore> ref, String itemId, int count) {
+    private static void grantItem(Store<EntityStore> store, Ref<EntityStore> ref, Vector3i pos, String itemId, int count) {
         try {
             Item item = Item.getAssetMap().getAsset(itemId);
-            if (item == null) return;
+            if (item == null) {
+                OresAndStuffPlugin.get().getLogger().at(Level.WARNING).log("Drop item id not registered, skipping: " + itemId);
+                return;
+            }
             ItemStack stack = new ItemStack(itemId, count);
-            var inv = InventoryComponent.getCombined(store, ref, InventoryComponent.HOTBAR_FIRST);
-            inv.addItemStack(stack);
-        } catch (Exception ignored) {}
+
+            if (GlobalSettings.getMiningMode() == MiningMode.DROP) {
+                World w = store.getExternalData().getWorld();
+                Vector3d dropPos = new Vector3d(pos.x + 0.5, pos.y + 1.1, pos.z + 0.5);
+                if (w != null) {
+                    w.execute(() -> {
+                        try {
+                            var holder = ItemComponent.generateItemDrop(store, stack, dropPos, Rotation3f.IDENTITY, 0f, 0.25f, 0f);
+                            if (holder != null) {
+                                var dropped = holder.getComponent(ItemComponent.getComponentType());
+                                if (dropped != null) dropped.setPickupDelay(ItemComponent.PICKUP_DELAY_DROPPED);
+                                store.addEntity(holder, AddReason.SPAWN);
+                            }
+                        } catch (Exception ex) {
+                            OresAndStuffPlugin.get().getLogger().at(Level.WARNING).log("Drop spawn failed for " + itemId + ": " + ex);
+                        }
+                    });
+                }
+            } else {
+                var inv = InventoryComponent.getCombined(store, ref, InventoryComponent.HOTBAR_FIRST);
+                inv.addItemStack(stack);
+            }
+        } catch (Exception e) {
+            OresAndStuffPlugin.get().getLogger().at(Level.WARNING).log("Failed to grant item " + itemId + ": " + e);
+        }
     }
 }
